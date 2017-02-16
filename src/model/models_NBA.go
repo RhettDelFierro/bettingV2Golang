@@ -1,9 +1,7 @@
 package model
 
 type (
-	NBA_League struct {
-		Teams []NBA_Team
-	}
+	NBA_League []NBA_Team
 
 	NBA_Team struct {
 		Team_ID      int `json:"id"`

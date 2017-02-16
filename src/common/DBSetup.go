@@ -36,6 +36,8 @@ func getDBConfig() (AppConfig configuration) {
 	dbPwd := os.Getenv("SPORTS_DATABASE_PWD")
 	db := os.Getenv("DATABASE_SPORTS")
 
+	//fmt.Println("keys:", dbHost, dbUser, dbPwd)
+
 	AppConfig = configuration{
 		DBHost: dbHost,
 		DBUser: dbUser,
