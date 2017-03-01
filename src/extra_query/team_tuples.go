@@ -22,7 +22,6 @@ func GetNBATeams(api_key string, db *sql.DB) (model.NBA_League, error) {
 
 	data := url.Values{}
 	data.Set("api_key", api_key)
-	fmt.Println("data being sent", api_key)
 	req, err := http.NewRequest("POST", league_url, bytes.NewBufferString(data.Encode()))
 	//req, err:= http.NewRequest("POST", league_url, strings.NewReader())
 	if err != nil {
