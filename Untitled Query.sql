@@ -1,0 +1,23 @@
+CREATE TABLE boxscores (
+	id INT NOT NULL,
+	team_id INT NOT NULL,
+	opponent_id INT,
+	period TEXT,
+	season TEXT,
+	min TEXT,
+	fgm INT,
+	fga INT,
+	fg3m INT,
+	ftm INT,
+	fta INT,
+	oreb INT,
+	dreb INT,
+	ast INT,
+	blk INT,
+	stl INT,
+	tno INT,
+	pf INT,
+	pts INT,
+	plus_minus INT,
+	PRIMARY KEY(id, team_id)
+);
