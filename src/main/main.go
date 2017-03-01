@@ -23,7 +23,7 @@ var api_key string
 
 const gamesUrl string = "http://api.probasketballapi.com/game"              //send season: 2016
 const teamsUrl string = "http://api.probasketballapi.com/team"              //send only api key
-const sportsVuUrl string = "http://api.probasketballapi.com/sportsvu/team"     //send season and game_id
+const sportsVuUrl string = "http://api.probasketballapi.com/sportsvu/team"  //send season and game_id
 const boxscoresUrl string = "http://api.probasketballapi.com/boxscore/team" //send season
 
 func init() {
@@ -60,21 +60,50 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 }
 
 func dbInsertBoxScores(boxScores model.BoxScores) (err error) {
-	for _,v := range boxScores {
-		err = getTeamVus(v)
+	for _, v := range boxScores {
+		err = getTeamVu(v)
 		if err != nil {
 			return
 		}
+
+		_, err = db.Exec("INSERT INTO boxscores (id, team_id, opponent_id, min, fgm, fga, fg3m, fg3a, ftm, fta, oreb, dreb, ast, blk, stl, tno, pf, pts, plus_minus) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)",
+			v.GameID, v.TeamID, v.OpponentID, v.Min, v.Fgm, v.Fga, v.Fg3M, v.Fg3A, v.Ftm, v.Fta, v.Oreb, v.Dreb, v.Ast, v.Blk, v.Stl, v.To, v.Pf, v.Pts, v.PlusMinus)
+		if err != nil {
+			return
+		}
+
+		return
+
 	}
 
 	return
 }
 
-func getTeamVus(boxScore model.BoxScore) (err error) {
-	teamVUs, err := getTeamVusHTTP(boxScore)
+func getTeamVu(boxScore model.BoxScore) (err error) {
+	teamVu, err := getTeamVuHTTP(boxScore)
+	if err != nil {
+		return
+	}
+
+	err = dbInsertTeamVu(teamVu)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
-func getTeamVusHTTP(boxScore model.BoxScore) (teamVus model.TeamVus, err error){
+func dbInsertTeamVu(t model.TeamVu) (err error) {
+	_, err = db.Exec("INSERT INTO vus (id, team_id, opponent_id, orbc, drbc, sast, ftast, cfgm, cfga, ufgm, ufga, dfgm, dfga) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+		t.GameID, t.TeamID, t.OpponentID, t.Orbc, t.Drbc, t.Sast, t.Ftast, t.Cfgm, t.Cfga, t.Ufgm, t.Ufga, t.Dfgm, t.Dfga)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func getTeamVuHTTP(boxScore model.BoxScore) (teamVus model.TeamVu, err error) {
 	client := &http.Client{
 		Timeout: time.Second * 100,
 	}
@@ -101,11 +130,11 @@ func getTeamVusHTTP(boxScore model.BoxScore) (teamVus model.TeamVus, err error){
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	//err = json.NewDecoder(resp.Body).Decode(&games)
-	err = json.Unmarshal(body, &boxScores)
+	err = json.Unmarshal(body, &teamVus)
 	return
 }
 
-func getBoxScoresHTTP() (boxscores model.BoxScores, err error){
+func getBoxScoresHTTP() (boxscores model.BoxScores, err error) {
 	client := &http.Client{
 		Timeout: time.Second * 100,
 	}

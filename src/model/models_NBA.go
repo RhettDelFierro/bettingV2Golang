@@ -57,7 +57,7 @@ type (
 	}
 
 	TeamVus []TeamVu
-	TeamVu []struct {
+	TeamVu struct {
 		GameID     int `json:"game_id"`
 		TeamID     int `json:"team_id"`
 		OpponentID int `json:"opponent_id"`
