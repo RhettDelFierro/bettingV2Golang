@@ -14,6 +14,7 @@ import (
 	"time"
 	"net/url"
 	"bytes"
+	"io/ioutil"
 )
 
 var db *sql.DB
@@ -44,38 +45,20 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 
 	//check if the DB has been populated:
 
-	teams, err := getTeamsHTTP()
+	//check for games
+
+	games, err := getRecentGamesHTTP()
 	if err != nil {
-		common.DisplayAppError(w, err, "error in getTeamsHTTP", http.StatusInternalServerError)
+		common.DisplayAppError(w, err, "error in getRecentGamesHTTP", http.StatusInternalServerError)
 		return
 	}
 
-	err = dbInsertTeams(teams)
+	err = dbInsertGames(games)
 	if err != nil {
 		common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
 		return
 	}
 
-	//check for games
-	//_, err = getRecentGames()
-	//switch {
-	//case err == sql.ErrNoRows:
-	//	games, err := getRecentGamesHTTP()
-	//	if err != nil {
-	//		common.DisplayAppError(w, err, "error in getRecentGamesHTTP", http.StatusInternalServerError)
-	//		return
-	//	}
-	//
-	//	err = dbInsertGames(games)
-	//	if err != nil {
-	//		common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
-	//		return
-	//	}
-	//case err != nil:
-	//	http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-	//	return
-	//}
-	fmt.Println(teams)
 }
 
 func getRecentGames() (rows *sql.Rows, err error) {
@@ -109,73 +92,23 @@ func getRecentGamesHTTP() (games model.Games, err error) {
 	}
 
 	defer resp.Body.Close()
-
-	err = json.NewDecoder(resp.Body).Decode(&games)
-
+	body, err := ioutil.ReadAll(resp.Body)
+	//err = json.NewDecoder(resp.Body).Decode(&games)
+	err = json.Unmarshal(body, &games)
 	return
 }
 
-func getTeams() (rows *sql.Rows, err error) {
-	rows, err = db.Query("SELECT * FROM teams")
-	defer rows.Close()
-	return
-}
-
-func getTeamsHTTP() (teams model.Teams, err error) {
-
-	client := &http.Client{
-		Timeout: time.Second * 100,
-	}
-
-	data := url.Values{}
-	data.Set("api_key", api_key)
-
-	req, err := http.NewRequest("POST", teamsUrl, bytes.NewBufferString(data.Encode()))
-	//req, err:= http.NewRequest("POST", league_url, strings.NewReader())
-	if err != nil {
-		fmt.Println("error in new request")
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("error in Do", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	err = json.NewDecoder(resp.Body).Decode(&teams)
-	fmt.Println("here is resp.body", teams)
-	return
-}
-
-func dbInsertTeams(teams model.Teams) (err error) {
-	for _, v := range teams {
-		_, err = db.Exec(
-			"INSERT INTO teams (id, city, team_name, abbreviation) VALUES ($1, $2, $3, $4)",
-			v.ID, v.City, v.TeamName, v.Abbreviation)
-
+//should make a query to check if the game exists.
+func dbInsertGames(games model.Games) (err error) {
+	for _, v := range games {
+		_, err = db.Exec("INSERT INTO games (id, home_id, away_id, season, game_date, final) VALUES ($1, $2, $3, $4, $5, $6)",
+			v.ID, v.HomeID, v.AwayID, v.Season, v.Date.Time, v.Final)
 		if err != nil {
 			return
 		}
 	}
 	return
 }
-
-//should make a query to check if the game exists.
-//func dbInsertGames(games model.Games) (err error) {
-//	for _, v := range games {
-//		_, err = db.Exec("INSERT INTO games (id, home_id, away_id, season, game_date, final) VALUES ($1, $2, $3, $4, $5, $6) WHERE id <> $1",
-//			v.ID, v.HomeID, v.AwayID, v.Season, v.Date, v.Final)
-//		if err != nil {
-//			return
-//		}
-//	}
-//	return
-//}
 
 //func GetStats(url string, ch chan<- []byte) {
 //	client := &http.Client{

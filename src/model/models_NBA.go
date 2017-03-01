@@ -1,8 +1,13 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type (
+	Time struct {
+		time.Time
+	}
 	Teams []Team
 	Team struct {
 		ID           int `json:"id"`
@@ -20,7 +25,7 @@ type (
 		HomeID int `json:"home_id"`
 		AwayID int `json:"away_id"`
 		Season string `json:"season"`
-		Date   time.Time `json:"date,string"`
+		Date   Time `json:"date,string"`
 		Final  int `json:"final"`
 	}
 
@@ -72,3 +77,10 @@ type (
 		Dfga       int `json:"dfga"`
 	}
 )
+
+func (t *Time) UnmarshalJSON(b []byte) error {
+	// you can now parse b as thoroughly as you want
+	t1, _ := time.Parse("2006-01-02 15:04:05", "2016-10-25 20:00:00")
+	*t = Time{t1}
+	return nil
+}
