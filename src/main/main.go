@@ -55,21 +55,17 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		common.DisplayAppError(w, err, "error in geBoxScoresHTTP", http.StatusInternalServerError)
 	}
-	fmt.Println("here are boxscores:", boxScores)
+
 	err = dbInsertBoxScores(boxScores)
 	if err != nil {
-		common.DisplayAppError(w, err, "error in geBoxScoresHTTP", http.StatusInternalServerError)
+		common.DisplayAppError(w, err, "error in dbInsertBoxScores", http.StatusInternalServerError)
 	}
 
 }
 
 func dbInsertBoxScores(boxScores model.BoxScores) (err error) {
-
 	for _, v := range boxScores {
-		err = getTeamVu(v)
-		if err != nil {
-			return
-		}
+		//go getTeamVu(v)
 
 		_, err = db.Exec("INSERT INTO boxscores (id, team_id, opponent_id, min, fgm, fga, fg3m, fg3a, ftm, fta, oreb, dreb, ast, blk, stl, tno, pf, pts, plus_minus) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)",
 			v.GameID, v.TeamID, v.OpponentID, v.Min, v.Fgm, v.Fga, v.Fg3M, v.Fg3A, v.Ftm, v.Fta, v.Oreb, v.Dreb, v.Ast, v.Blk, v.Stl, v.To, v.Pf, v.Pts, v.PlusMinus)
@@ -80,11 +76,20 @@ func dbInsertBoxScores(boxScores model.BoxScores) (err error) {
 	return
 }
 
+//use this one later
 func getTeamVu(boxScore model.BoxScore) (err error) {
-	teamVu, err := getTeamVuHTTP(boxScore)
+	var teamsVu model.TeamVus
+	ch := make(chan []byte)
+	err = getTeamVuHTTP(boxScore, ch)
 	if err != nil {
 		return
 	}
+
+	err = json.Unmarshal(<-ch, &teamsVu)
+	if err != nil {
+		return
+	}
+	teamVu := teamsVu[0]
 
 	err = dbInsertTeamVu(teamVu)
 	if err != nil {
@@ -104,8 +109,8 @@ func dbInsertTeamVu(t model.TeamVu) (err error) {
 	return
 }
 
-func getTeamVuHTTP(boxScore model.BoxScore) (teamVu model.TeamVu, err error) {
-	var teamVus model.TeamVus
+func getTeamVuHTTP(boxScore model.BoxScore, ch chan <- []byte) (err error) {
+	//var teamVus model.TeamVus
 	client := &http.Client{
 		Timeout: time.Second * 100,
 	}
@@ -117,7 +122,7 @@ func getTeamVuHTTP(boxScore model.BoxScore) (teamVu model.TeamVu, err error) {
 	data.Set("game_id", strconv.Itoa(boxScore.GameID))
 	req, err := http.NewRequest("POST", sportsVuUrl, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println("error in new request")
+		fmt.Println("error in new request getTeamVuHTTP")
 		return
 	}
 
@@ -125,15 +130,16 @@ func getTeamVuHTTP(boxScore model.BoxScore) (teamVu model.TeamVu, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("error in Do getTeamVuHTTP", err)
+		fmt.Println("error in Do getTeamVuHTTP", err, boxScore)
 		return
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	//err = json.NewDecoder(resp.Body).Decode(&games)
-	err = json.Unmarshal(body, &teamVus)
-	teamVu = teamVus[0]
+
+	ch <- body
+
 	return
 }
 
@@ -147,7 +153,7 @@ func getBoxScoresHTTP() (boxscores model.BoxScores, err error) {
 	data.Set("season", "2016")
 	req, err := http.NewRequest("POST", boxscoresUrl, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println("error in new request")
+		fmt.Println("error in new request getBoxScoresHTTP")
 		return
 	}
 
@@ -155,7 +161,7 @@ func getBoxScoresHTTP() (boxscores model.BoxScores, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("error in Do", err)
+		fmt.Println("error in Do getBoxScoresHTTP", err)
 		return
 	}
 
@@ -198,7 +204,7 @@ func getRecentGamesHTTP() (games model.Games, err error) {
 	data.Set("season", "2016")
 	req, err := http.NewRequest("POST", gamesUrl, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		fmt.Println("error in new request")
+		fmt.Println("error in new request getRecentGamesHTTP")
 		return
 	}
 
@@ -206,7 +212,7 @@ func getRecentGamesHTTP() (games model.Games, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("error in Do", err)
+		fmt.Println("error in Do getRecentGamesHTTP", err)
 		return
 	}
 
