@@ -15,7 +15,7 @@ type (
 	}
 
 	Games []Game
-	Game []struct {
+	Game struct {
 		ID     int `json:"id"`
 		HomeID int `json:"home_id"`
 		AwayID int `json:"away_id"`
