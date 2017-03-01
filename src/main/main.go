@@ -55,11 +55,16 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		common.DisplayAppError(w, err, "error in geBoxScoresHTTP", http.StatusInternalServerError)
 	}
+	fmt.Println("here are boxscores:", boxScores)
+	err = dbInsertBoxScores(boxScores)
+	if err != nil {
+		common.DisplayAppError(w, err, "error in geBoxScoresHTTP", http.StatusInternalServerError)
+	}
 
-	err := dbInsertBoxScores(boxScores)
 }
 
 func dbInsertBoxScores(boxScores model.BoxScores) (err error) {
+
 	for _, v := range boxScores {
 		err = getTeamVu(v)
 		if err != nil {
@@ -71,11 +76,7 @@ func dbInsertBoxScores(boxScores model.BoxScores) (err error) {
 		if err != nil {
 			return
 		}
-
-		return
-
 	}
-
 	return
 }
 
@@ -103,7 +104,8 @@ func dbInsertTeamVu(t model.TeamVu) (err error) {
 	return
 }
 
-func getTeamVuHTTP(boxScore model.BoxScore) (teamVus model.TeamVu, err error) {
+func getTeamVuHTTP(boxScore model.BoxScore) (teamVu model.TeamVu, err error) {
+	var teamVus model.TeamVus
 	client := &http.Client{
 		Timeout: time.Second * 100,
 	}
@@ -123,7 +125,7 @@ func getTeamVuHTTP(boxScore model.BoxScore) (teamVus model.TeamVu, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("error in Do", err)
+		fmt.Println("error in Do getTeamVuHTTP", err)
 		return
 	}
 
@@ -131,6 +133,7 @@ func getTeamVuHTTP(boxScore model.BoxScore) (teamVus model.TeamVu, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	//err = json.NewDecoder(resp.Body).Decode(&games)
 	err = json.Unmarshal(body, &teamVus)
+	teamVu = teamVus[0]
 	return
 }
 
