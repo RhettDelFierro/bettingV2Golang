@@ -9,6 +9,8 @@ import (
 	"os"
 	"encoding/json"
 	"database/sql"
+	"fmt"
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -18,6 +20,24 @@ type EveryTeam struct {
 	Results model.NBA_League `json:"results"`
 }
 
+func init() {
+	var err error
+	db, err = sql.Open("postgres", os.Getenv("NBA_DB"))
+	if err != nil {
+		panic(err)
+	}
+
+	if err = db.Ping(); err != nil {
+		panic(err)
+	}
+	fmt.Println("You connected to your database.")
+}
+
+func GetData(w http.Response, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	teamUrl := "http://api.probasketballapi.com/team"
+}
 
 func GetPredictions(w http.ResponseWriter, req *http.Request) {
 	//ch := make(chan []byte)
@@ -56,6 +76,6 @@ func main() {
 	defer db.Close()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/predictions", GetPredictions).Methods("GET")
+	router.HandleFunc("/predictions", GetData).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
