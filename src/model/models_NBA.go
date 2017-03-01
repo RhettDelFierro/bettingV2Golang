@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type (
 	Teams []Team
 	Team struct {
@@ -18,7 +20,7 @@ type (
 		HomeID int `json:"home_id"`
 		AwayID int `json:"away_id"`
 		Season string `json:"season"`
-		Date   string `json:"date"`
+		Date   time.Time `json:"date,string"`
 		Final  int `json:"final"`
 	}
 
@@ -40,7 +42,7 @@ type (
 		Dreb       int `json:"dreb"`
 		Ast        int `json:"ast"`
 		Blk        int `json:"blk"`
-		Stl        string `json:"stl"`
+		Stl        int `json:"stl,string"`
 		To         int `json:"to"`
 		Pf         int `json:"pf"`
 		Pts        int `json:"pts"`

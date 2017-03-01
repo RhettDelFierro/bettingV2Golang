@@ -41,7 +41,11 @@ func init() {
 
 func GetData(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if _, err :=  getTeams(); err != nil {
+
+	//check if the DB has been populated:
+	_, err :=  getTeams()
+	switch {
+	case err == sql.ErrNoRows:
 		teams, err := getTeamsHTTP()
 		if err != nil {
 			common.DisplayAppError(w, err, "error in getTeamsHTTP", http.StatusInternalServerError)
@@ -53,10 +57,29 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 			common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
 			return
 		}
+	case err != nil:
+		http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		return
 	}
 
-	if _, err := getRecentGames(); err != nil {
+	//check for games
+	_, err = getRecentGames()
+	switch {
+	case err == sql.ErrNoRows:
+		teams, err := getRecentGamesHTTP()
+		if err != nil {
+			common.DisplayAppError(w, err, "error in getRecentGamesHTTP", http.StatusInternalServerError)
+			return
+		}
 
+		err = dbInsertGames(teams)
+		if err != nil {
+			common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
+			return
+		}
+	case err != nil:
+		http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		return
 	}
 
 }
@@ -66,6 +89,35 @@ func getRecentGames() (rows *sql.Rows,err error){
 	//remember, want to query for recent game.
 	rows, err = db.Query("SELECT * FROM games WHERE //")
 	defer rows.Close()
+	return
+}
+
+func getRecentGamesHTTP() (games model.Games,err error){
+	client := &http.Client{
+		Timeout: time.Second * 100,
+	}
+
+	data := url.Values{}
+	data.Set("api_key", api_key)
+	data.Set("season", "2016")
+	req, err := http.NewRequest("POST", gamesUrl, bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		fmt.Println("error in new request")
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("error in Do", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&games)
+
 	return
 }
 
@@ -109,6 +161,16 @@ func getTeamsHTTP() (teams model.Teams, err error) {
 func dbInsertTeams(teams model.Teams) (err error) {
 	for _,v := range teams {
 		_, err = db.Exec("INSERT INTO teams VALUES ($1, $2, $3, $4)", v.ID, v.City, v.TeamName, v.Abbreviation)
+		if err != nil {
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func dbInsertGames(games model.Games) (err error) {
+	for _,v := range teams {
+		_, err = db.Exec("INSERT INTO games VALUES ($1, $2, $3, $4)", v.ID, v.City, v.TeamName, v.Abbreviation)
 		if err != nil {
 			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 			return
