@@ -47,17 +47,17 @@ func GetData(w http.ResponseWriter, req *http.Request) {
 
 	//check for games
 
-	games, err := getRecentGamesHTTP()
-	if err != nil {
-		common.DisplayAppError(w, err, "error in getRecentGamesHTTP", http.StatusInternalServerError)
-		return
-	}
-
-	err = dbInsertGames(games)
-	if err != nil {
-		common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
-		return
-	}
+	//games, err := getRecentGamesHTTP()
+	//if err != nil {
+	//	common.DisplayAppError(w, err, "error in getRecentGamesHTTP", http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//err = dbInsertGames(games)
+	//if err != nil {
+	//	common.DisplayAppError(w, err, "error in dbInsertTeams", http.StatusInternalServerError)
+	//	return
+	//}
 
 }
 
