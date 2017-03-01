@@ -144,18 +144,6 @@ func dbInsertGames(games model.Games) (err error) {
 //}
 
 func main() {
-	//db, err = common.CreateDbSession()
-	//if err != nil {
-	//	log.Panic(err)
-	//}
-	//
-	//err = db.Ping()
-	//if err != nil {
-	//	panic(err.Error())
-	//}
-	//
-	//defer db.Close()
-
 	router := mux.NewRouter()
 	router.HandleFunc("/predictions", GetData).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8080", router))

@@ -2,12 +2,14 @@ package model
 
 import (
 	"time"
+	"fmt"
 )
 
 type (
 	Time struct {
 		time.Time
 	}
+
 	Teams []Team
 	Team struct {
 		ID           int `json:"id"`
@@ -79,8 +81,10 @@ type (
 )
 
 func (t *Time) UnmarshalJSON(b []byte) error {
-	// you can now parse b as thoroughly as you want
-	t1, _ := time.Parse("2006-01-02 15:04:05", "2016-10-25 20:00:00")
+	s := string(b)
+	s = s[1:len(s)-1] //have to get rid of quotes
+	t1, _ := time.Parse("2006-01-02 15:04:05", s)
 	*t = Time{t1}
+	fmt.Println(s, t1)
 	return nil
 }
